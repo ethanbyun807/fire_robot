@@ -1,7 +1,7 @@
 // 서비스 워커: 앱 화면(껍데기)만 캐시해서 오프라인에서도 앱이 열리게 합니다.
 // MQTT(WebSocket)와 카메라 영상은 캐시하지 않고 항상 실시간으로 받습니다.
 // 파일을 수정해서 다시 배포할 때는 아래 버전 숫자를 올려야 폰이 새 파일을 받습니다.
-const CACHE = "fire-robot-v1";
+const CACHE = "fire-robot-v2";
 const SHELL = [
   "./",
   "./index.html",
@@ -13,7 +13,12 @@ const SHELL = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
+  // 파일을 하나씩 저장하고, 일부가 없어도(404) 설치 자체는 실패하지 않게 합니다.
+  e.waitUntil(
+    caches.open(CACHE)
+      .then((c) => Promise.allSettled(SHELL.map((u) => c.add(u))))
+      .then(() => self.skipWaiting())
+  );
 });
 
 self.addEventListener("activate", (e) => {
